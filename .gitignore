@@ -1,0 +1,25 @@
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Backups & Logs
+*.log
+*.reg
+backups/
+
+# PowerShell
+*.ps1xml
+*.clixml
+
+# Large ISO and Image files (never commit ISOs)
+*.iso
+*.wim
+*.esd
+*.vhd
+*.vhdx
+
+# Temp
+temp/
+tmp/
