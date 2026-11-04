@@ -2,9 +2,11 @@
 .SYNOPSIS
     anywin11 - Automated Windows 11 Readiness, Health Scan & Upgrade Tool
 .DESCRIPTION
-    Scans Windows systems for registry corruption, dangling services, and hardware compatibility,
-    auto-downloads the official Microsoft Windows 11 ISO, applies necessary bypasses, and
-    upgrades any PC to Windows 11 cleanly while preserving all personal files and apps.
+    Scans Windows systems for the installed operating system, registry corruption,
+    dangling services, and hardware compatibility, auto-downloads the official Microsoft
+    Windows 11 ISO, applies necessary bypasses, and upgrades any PC to Windows 11 cleanly.
+.EXAMPLE
+    .\anywin11.ps1 -OS
 .EXAMPLE
     .\anywin11.ps1 -Scan
 .EXAMPLE
@@ -13,12 +15,13 @@
     .\anywin11.ps1 -DownloadOnly
 .EXAMPLE
     .\anywin11.ps1 -Upgrade -Edition Pro
-.EXAMPLE
-    .\anywin11.ps1 -Upgrade -Edition Pro -BypassHardware
 #>
 
 [CmdletBinding(DefaultParameterSetName = "Interactive")]
 param(
+    [Parameter(ParameterSetName = "OS")]
+    [switch]$OS,
+
     [Parameter(ParameterSetName = "Scan")]
     [switch]$Scan,
 
@@ -62,28 +65,36 @@ Get-ChildItem -Path (Join-Path $scriptRoot "modules") -Filter "*.psm1" | ForEach
 
 function Show-Banner {
     Clear-Host
-    Write-Host @"
-   ___  _  ____ _____      _____ _  _ _ 
-  / _ \| \| \ \ / / \ \    / /_ _| \| / |
- | (_) | .` |\ V /| |\ \/\/ / | || .` | |
-  \___/|_|\_| |_| |_| \_/\_/ |___|_|\_|_|
-  Automated System Health, Audit & Upgrade Tool
-"@ -ForegroundColor Cyan
+    Write-Host '   ___  _  ____ _____      _____ _  _ _ ' -ForegroundColor Cyan
+    Write-Host '  / _ \| \| \ \ / / \ \    / /_ _| \| / |' -ForegroundColor Cyan
+    Write-Host ' | (_) | .` |\ V /| |\ \/\/ / | || .` | |' -ForegroundColor Cyan
+    Write-Host '  \___/|_|\_| |_| |_| \_/\_/ |___|_|\_|_|' -ForegroundColor Cyan
+    Write-Host '  Automated System Health, Audit & Upgrade Tool' -ForegroundColor Cyan
     Write-Host "  --------------------------------------------------------" -ForegroundColor DarkGray
 }
 
 function Show-SystemSummary {
     $sys = Get-SystemEditionInfo
-    Write-Host "  [i] Operating System : $($sys.ProductName) ($($sys.EditionID))" -ForegroundColor Gray
-    Write-Host "  [i] Build Version    : $($sys.CurrentBuild) ($($sys.DisplayVersion))" -ForegroundColor Gray
-    if ($sys.HasEmbeddedKey) {
-        Write-Host "  [i] BIOS OEM Key     : $($sys.BiosKeyType)" -ForegroundColor Gray
+    Write-Host "  ========================================================" -ForegroundColor DarkCyan
+    Write-Host "   [PC] CURRENT OPERATING SYSTEM DETECTED" -ForegroundColor Cyan
+    Write-Host "  ========================================================" -ForegroundColor DarkCyan
+    Write-Host "   * OS Name       : $($sys.ProductName)" -ForegroundColor White
+    Write-Host "   * Edition       : $($sys.EditionID) ($($sys.Architecture))" -ForegroundColor Gray
+    Write-Host "   * Version       : $($sys.DisplayVersion) (Build $($sys.CurrentBuild))" -ForegroundColor Gray
+    if ($sys.IsWindows11) {
+        Write-Host "   * System Status : [OK] Currently running Windows 11 ($($sys.EditionID))" -ForegroundColor Green
+    } else {
+        Write-Host "   * System Status : [READY] Eligible for upgrade to Windows 11 $($sys.DefaultTarget)" -ForegroundColor Yellow
     }
-    Write-Host "  --------------------------------------------------------`n" -ForegroundColor DarkGray
+    if ($sys.HasEmbeddedKey) {
+        Write-Host "   * BIOS License  : $($sys.BiosKeyType)" -ForegroundColor DarkGray
+    }
+    Write-Host "  ========================================================`n" -ForegroundColor DarkCyan
 }
 
 function Run-ScanWorkflow {
     Show-Banner
+    Show-SystemSummary
     Write-Host "  === [1/2] REGISTRY & SYSTEM INTEGRITY SCAN ===" -ForegroundColor Yellow
     $diag = Invoke-RegistryScan
 
@@ -108,6 +119,7 @@ function Run-ScanWorkflow {
 
 function Run-AuditWorkflow {
     Show-Banner
+    Show-SystemSummary
     Write-Host "  === [2/2] HARDWARE COMPATIBILITY AUDIT ===" -ForegroundColor Yellow
     $audit = Get-Win11HardwareReadiness
 
@@ -141,6 +153,7 @@ function Run-UpgradeWorkflow {
     )
 
     Show-Banner
+    Show-SystemSummary
     Write-Host "  === WINDOWS 11 UPGRADE WORKFLOW ===" -ForegroundColor Yellow
 
     # 1. Resolve Target Key
@@ -205,7 +218,10 @@ function Run-UpgradeWorkflow {
 }
 
 # Execution Router
-if ($Scan) {
+if ($OS) {
+    Show-Banner
+    Show-SystemSummary
+} elseif ($Scan) {
     Run-ScanWorkflow | Out-Null
 } elseif ($Fix) {
     $diag = Run-ScanWorkflow
@@ -220,6 +236,7 @@ if ($Scan) {
     Run-AuditWorkflow | Out-Null
 } elseif ($DownloadOnly) {
     Show-Banner
+    Show-SystemSummary
     Invoke-Windows11IsoDownload | Out-Null
 } elseif ($Upgrade) {
     Run-UpgradeWorkflow -TargetEdition $Edition -IsoFile $IsoPath -CustomKey $ProductKey -Bypass:$BypassHardware -Silent:$Unattended
@@ -230,7 +247,7 @@ if ($Scan) {
         Show-SystemSummary
 
         Write-Host "  Main Menu:" -ForegroundColor White
-        Write-Host "  [1] 🚀 1-Click Upgrade (Auto-Download ISO -> Scan -> Bypass -> Install Pro)" -ForegroundColor Green
+        Write-Host "  [1] [AUTO] 1-Click Upgrade (Auto-Download ISO -> Scan -> Bypass -> Install Pro)" -ForegroundColor Green
         Write-Host "  [2] Run Full Health & Compatibility Scan" -ForegroundColor Cyan
         Write-Host "  [3] Fix Broken Registry & Dangling Services" -ForegroundColor Cyan
         Write-Host "  [4] Hardware Compatibility Audit" -ForegroundColor Cyan
@@ -242,7 +259,6 @@ if ($Scan) {
         $choice = Read-Host "  Select an option"
         switch ($choice) {
             "1" {
-                # 1-Click Upgrade: Scan -> Fix if needed -> Upgrade to Pro
                 $diag = Run-ScanWorkflow
                 if ($diag.DanglingServices.Count -gt 0) {
                     Write-Host "`n  [*] Automatically cleaning broken services..." -ForegroundColor Cyan

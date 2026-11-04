@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
     Edition Manager module for anywin11.
-    Detects current Windows edition, checks embedded OEM keys, and maps target Windows 11 upgrade keys.
+    Accurately detects installed Windows OS, architecture, version, build, BIOS keys,
+    and maps target Windows 11 upgrade keys.
 #>
 
 $script:GenericUpgradeKeys = @{
@@ -18,9 +19,11 @@ function Get-SystemEditionInfo {
     [CmdletBinding()]
     param()
 
+    # Query true OS Caption and Architecture via CIM
+    $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
     $cv = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -ErrorAction SilentlyContinue
 
-    # Check BIOS / ACPI MSDM Table
+    # Check BIOS / ACPI MSDM Table for embedded OEM product key
     $biosKey = $null
     $biosDesc = $null
     try {
@@ -31,23 +34,40 @@ function Get-SystemEditionInfo {
         }
     } catch {}
 
+    # Extract accurate OS Name
+    $productName = if ($os -and $os.Caption) { $os.Caption } else { $cv.ProductName }
     $installedEdition = if ($cv.EditionID) { $cv.EditionID } else { "Unknown" }
-    $productName      = if ($cv.ProductName) { $cv.ProductName } else { "Windows" }
-    $currentBuild     = if ($cv.CurrentBuild) { $cv.CurrentBuild } else { "0" }
-    $ubr              = if ($cv.UBR) { $cv.UBR } else { "0" }
-    $displayVersion   = if ($cv.DisplayVersion) { $cv.DisplayVersion } else { "" }
+    $currentBuild = if ($os -and $os.BuildNumber) { $os.BuildNumber } else { $cv.CurrentBuild }
+    $ubr = if ($cv.UBR) { $cv.UBR } else { "0" }
+    $displayVersion = if ($cv.DisplayVersion) { $cv.DisplayVersion } elseif ($cv.ReleaseId) { $cv.ReleaseId } else { "" }
+    $arch = if ($os -and $os.OSArchitecture) { $os.OSArchitecture } else { "64-bit" }
 
-    # Detect recommended target edition
+    # Detect if already on Windows 11 (Build >= 22000)
+    $buildInt = 0
+    [int]::TryParse($currentBuild, [ref]$buildInt) | Out-Null
+    $isWin11 = ($buildInt -ge 22000)
+
+    # Determine recommended target edition
     $targetEdition = "Pro"
     if ($installedEdition -match "Core|Home" -and [string]::IsNullOrWhiteSpace($biosKey)) {
         $targetEdition = "Home"
+    }
+
+    $statusMessage = if ($isWin11) {
+        "Already running Windows 11 ($installedEdition)"
+    } else {
+        "Eligible for upgrade to Windows 11 $targetEdition"
     }
 
     return [PSCustomObject]@{
         ProductName      = $productName
         DisplayVersion   = $displayVersion
         CurrentBuild     = "$currentBuild.$ubr"
+        BuildNumber      = $buildInt
         EditionID        = $installedEdition
+        Architecture     = $arch
+        IsWindows11      = $isWin11
+        StatusMessage    = $statusMessage
         BiosKey          = $biosKey
         BiosKeyType      = $biosDesc
         DefaultTarget    = $targetEdition

@@ -36,6 +36,7 @@
 
 ## 🌟 Highlights
 
+- 🖥️ **Automatic OS & Architecture Scanner:** Automatically detects the installed Windows OS via CIM and registry (distinguishing true Windows 10 vs Windows 11, Edition, 64-bit/ARM64 architecture, version, build number, and embedded motherboard BIOS OEM keys) and displays an instant system diagnostic card.
 - ⚡ **Fully Automated ISO Downloader:** No manual downloads required. `anywin11` automatically negotiates and retrieves genuine, untampered Windows 11 ISOs directly from Microsoft's CDN with resumable download support (`curl.exe -C -`).
 - 🔓 **Universal Hardware Bypass Engine:** Built-in `LabConfig` and `MoSetup` bypasses (`BypassTPMCheck`, `BypassCPUCheck`, `BypassSecureBootCheck`, `BypassRAMCheck`, `BypassStorageCheck`), enabling smooth upgrades on any older or unsupported PC.
 - 🔍 **System Diagnostics & Registry Cleaner:** Scans core registry hives, detects dangling service entries pointing to deleted binaries (adware remnants, stale driver software), checks pending reboot backlogs, and inspects component store health.
@@ -103,13 +104,18 @@ cd Anywindows11
   \___/|_|\_| |_| |_| \_/\_/ |___|_|\_|_|
   Automated System Health, Audit & Upgrade Tool
   --------------------------------------------------------
-  [i] Operating System : Microsoft Windows 10 Home (Core)
-  [i] Build Version    : 18362.1256 (1903)
-  [i] BIOS OEM Key     : [4.0] Core OEM:DM
-  --------------------------------------------------------
+  ========================================================
+   [PC] CURRENT OPERATING SYSTEM DETECTED
+  ========================================================
+   * OS Name       : Microsoft Windows 11 Pro
+   * Edition       : Professional (64-bit)
+   * Version       : 26H2 (Build 26300.9457)
+   * System Status : [OK] Currently running Windows 11 (Professional)
+   * BIOS License  : [4.0] Core OEM:DM
+  ========================================================
 
   Main Menu:
-  [1] 🚀 1-Click Upgrade (Auto-Download ISO -> Scan -> Bypass -> Install Pro)
+  [1] [AUTO] 1-Click Upgrade (Auto-Download ISO -> Scan -> Bypass -> Install Pro)
   [2] Run Full Health & Compatibility Scan
   [3] Fix Broken Registry & Dangling Services
   [4] Hardware Compatibility Audit
@@ -126,22 +132,25 @@ cd Anywindows11
 For power users or automation scripts:
 
 ```powershell
-# 1. Full automated upgrade (downloads ISO if missing, applies bypasses, launches setup)
+# 1. Scan and display installed OS, architecture, build, and license status
+.\anywin11.ps1 -OS
+
+# 2. Full automated upgrade (downloads ISO if missing, applies bypasses, launches setup)
 .\anywin11.ps1 -Upgrade -Edition Pro
 
-# 2. Download official Windows 11 ISO only (resumable)
+# 3. Download official Windows 11 ISO only (resumable)
 .\anywin11.ps1 -DownloadOnly
 
-# 3. Read-only registry and system integrity scan
+# 4. Read-only registry and system integrity scan
 .\anywin11.ps1 -Scan
 
-# 4. Repair broken registry services and clean dangling paths
+# 5. Repair broken registry services and clean dangling paths
 .\anywin11.ps1 -Fix
 
-# 5. Audit hardware compatibility for Windows 11 requirements
+# 6. Audit hardware compatibility for Windows 11 requirements
 .\anywin11.ps1 -Audit
 
-# 6. Upgrade using an existing custom ISO path
+# 7. Upgrade using an existing custom ISO path
 .\anywin11.ps1 -Upgrade -IsoPath "D:\CustomISOs\Windows11.iso" -BypassHardware
 ```
 
@@ -149,6 +158,7 @@ For power users or automation scripts:
 
 | Flag | Description |
 |---|---|
+| `-OS` | Scans and displays the detected operating system, architecture, build number, and license status. |
 | `-Upgrade` | Mounts (or auto-downloads) the Windows 11 ISO, applies bypasses, and launches Setup. |
 | `-DownloadOnly` | Downloads the official Microsoft Windows 11 ISO to Downloads without installing. |
 | `-Edition <Pro\|Home>` | Sets target edition (defaults to `Pro`). |

@@ -1,6 +1,6 @@
 @echo off
 setlocal
-title anywin11 - Windows 11 Readiness, Health Scan & Upgrade Tool
+title anywin11 - Windows 11 Readiness, Health Scan and Upgrade Tool
 
 :: Check for Administrator permissions
 net session >nul 2>&1
