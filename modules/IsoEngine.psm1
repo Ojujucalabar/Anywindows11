@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     ISO Engine module for anywin11.
-    Handles ISO auto-discovery, SHA-256 checksum verification, mounting, and WIM inspection.
+    Handles automated ISO downloading, auto-discovery, SHA-256 checksum verification, mounting, and WIM inspection.
 #>
 
 function Find-Windows11Iso {
@@ -31,6 +31,91 @@ function Find-Windows11Iso {
     }
 
     return $candidates | Sort-Object Length -Descending
+}
+
+function Invoke-Windows11IsoDownload {
+    [CmdletBinding()]
+    param(
+        [string]$DestinationDir = (Join-Path $env:USERPROFILE "Downloads"),
+        [string]$Architecture = "x64"
+    )
+
+    if (-not (Test-Path $DestinationDir)) {
+        New-Item -ItemType Directory -Path $DestinationDir -Force | Out-Null
+    }
+
+    Write-Host "`n  ========================================================" -ForegroundColor Cyan
+    Write-Host "   Automated Official Windows 11 ISO Downloader" -ForegroundColor Cyan
+    Write-Host "  ========================================================" -ForegroundColor Cyan
+    Write-Host "  [*] Requesting official direct download token from Microsoft..." -ForegroundColor Gray
+
+    $fidoScript = Join-Path $env:TEMP "Fido.ps1"
+    try {
+        & curl.exe -s -L "https://raw.githubusercontent.com/pbatard/Fido/master/Fido.ps1" -o $fidoScript
+    } catch {
+        Write-Warning "Could not fetch Fido helper: $($_.Exception.Message)"
+    }
+
+    $downloadUrl = $null
+    if (Test-Path $fidoScript) {
+        try {
+            Write-Host "  [*] Resolving genuine Windows 11 multi-edition image..." -ForegroundColor Gray
+            $directUrl = & powershell.exe -ExecutionPolicy Bypass -File $fidoScript -Win "Windows 11" -Arch $Architecture -GetUrl 2>$null
+            if ($directUrl) {
+                # Find the URL line in case output had multiple lines
+                $matchedLine = ($directUrl -split "`r?`n") | Where-Object { $_ -match '^https?://.*\.iso' } | Select-Object -Last 1
+                if ($matchedLine) {
+                    $downloadUrl = $matchedLine.Trim()
+                }
+            }
+        } catch {
+            Write-Warning "Direct API query failed: $($_.Exception.Message)"
+        }
+    }
+
+    # Fallback if direct link could not be obtained
+    if (-not $downloadUrl) {
+        Write-Host "  [!] Could not generate direct session link. Using official Microsoft MediaCreationTool..." -ForegroundColor Yellow
+        $mctUrl = "https://go.microsoft.com/fwlink/?linkid=2156295"
+        $mctPath = Join-Path $DestinationDir "MediaCreationToolW11.exe"
+        Write-Host "  [*] Downloading MediaCreationTool from Microsoft..." -ForegroundColor Cyan
+        & curl.exe -L -o $mctPath $mctUrl
+        if (Test-Path $mctPath) {
+            Write-Host "  [+] MediaCreationTool downloaded: $mctPath" -ForegroundColor Green
+            Write-Host "  [*] Launching MediaCreationTool to generate ISO..." -ForegroundColor Cyan
+            Start-Process -FilePath $mctPath -ArgumentList "/Eula Accept /Retail /MediaArch x64 /MediaISO" -Wait
+            return (Find-Windows11Iso -SearchDirectory $DestinationDir | Select-Object -First 1)
+        }
+        return $null
+    }
+
+    # Extract filename from URL
+    $fileName = "Windows11_x64.iso"
+    if ($downloadUrl -match '/([^/?]+\.iso)') {
+        $fileName = $matches[1]
+    }
+    $targetPath = Join-Path $DestinationDir $fileName
+
+    Write-Host "  [+] Direct Microsoft CDN URL acquired!" -ForegroundColor Green
+    Write-Host "  [+] File name   : $fileName" -ForegroundColor Gray
+    Write-Host "  [+] Save path   : $targetPath" -ForegroundColor Gray
+    Write-Host "  [*] Downloading official ISO from Microsoft with resume support..." -ForegroundColor Cyan
+    Write-Host "      (Progress is updated live below; downloads can be resumed if interrupted)`n" -ForegroundColor DarkGray
+
+    # Use curl with progress bar, resume (-C -), and retries
+    & curl.exe -L --retry 5 --retry-delay 3 -C - -# -o $targetPath $downloadUrl
+
+    if (Test-Path $targetPath) {
+        $downloadedFile = Get-Item $targetPath
+        if ($downloadedFile.Length -gt 1GB) {
+            Write-Host "`n  [+] Download complete! File size: {0:N2} GB" -f ($downloadedFile.Length / 1GB) -ForegroundColor Green
+            return $downloadedFile
+        } else {
+            Write-Warning "Downloaded file is smaller than expected ({0:N2} MB)." -f ($downloadedFile.Length / 1MB)
+        }
+    }
+
+    return $null
 }
 
 function Test-IsoChecksum {
@@ -163,4 +248,4 @@ function Get-WimImageEditions {
     return $editions
 }
 
-Export-ModuleMember -Function Find-Windows11Iso, Test-IsoChecksum, Mount-WindowsIso, Dismount-WindowsIso, Get-WimImageEditions
+Export-ModuleMember -Function Find-Windows11Iso, Invoke-Windows11IsoDownload, Test-IsoChecksum, Mount-WindowsIso, Dismount-WindowsIso, Get-WimImageEditions

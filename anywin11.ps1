@@ -3,15 +3,18 @@
     anywin11 - Automated Windows 11 Readiness, Health Scan & Upgrade Tool
 .DESCRIPTION
     Scans Windows systems for registry corruption, dangling services, and hardware compatibility,
-    applies necessary bypasses, and upgrades any PC to Windows 11 cleanly.
+    auto-downloads the official Microsoft Windows 11 ISO, applies necessary bypasses, and
+    upgrades any PC to Windows 11 cleanly while preserving all personal files and apps.
 .EXAMPLE
     .\anywin11.ps1 -Scan
 .EXAMPLE
     .\anywin11.ps1 -Audit
 .EXAMPLE
+    .\anywin11.ps1 -DownloadOnly
+.EXAMPLE
     .\anywin11.ps1 -Upgrade -Edition Pro
 .EXAMPLE
-    .\anywin11.ps1 -Upgrade -IsoPath "C:\path\to\windows11.iso" -BypassHardware
+    .\anywin11.ps1 -Upgrade -Edition Pro -BypassHardware
 #>
 
 [CmdletBinding(DefaultParameterSetName = "Interactive")]
@@ -24,6 +27,9 @@ param(
 
     [Parameter(ParameterSetName = "Audit")]
     [switch]$Audit,
+
+    [Parameter(ParameterSetName = "DownloadOnly")]
+    [switch]$DownloadOnly,
 
     [Parameter(ParameterSetName = "Upgrade")]
     [switch]$Upgrade,
@@ -142,22 +148,29 @@ function Run-UpgradeWorkflow {
     Write-Host "`n  [+] Target Edition : Windows 11 $TargetEdition" -ForegroundColor Green
     Write-Host "  [+] Product Key    : $key" -ForegroundColor Gray
 
-    # 2. Locate ISO
+    # 2. Locate or Auto-Download ISO
     $iso = $null
     if (-not [string]::IsNullOrWhiteSpace($IsoFile) -and (Test-Path $IsoFile)) {
         $iso = Get-Item $IsoFile
     } else {
-        Write-Host "`n  [*] Auto-detecting Windows 11 ISO..." -ForegroundColor Cyan
+        Write-Host "`n  [*] Checking for existing Windows 11 ISO..." -ForegroundColor Cyan
         $found = Find-Windows11Iso
         if ($found -and $found.Count -gt 0) {
             $iso = $found[0]
-            Write-Host "  [+] Found ISO: $($iso.FullName) ({0:N2} GB)" -f ($iso.Length / 1GB) -ForegroundColor Green
+            Write-Host "  [+] Found existing ISO: $($iso.FullName) ({0:N2} GB)" -f ($iso.Length / 1GB) -ForegroundColor Green
         }
     }
 
+    # Auto-download ISO if none found locally
     if (-not $iso) {
-        Write-Host "`n  [X] Error: Could not find Windows 11 ISO image." -ForegroundColor Red
-        Write-Host "      Please place the Windows 11 ISO in your Downloads folder or specify -IsoPath <path>." -ForegroundColor Yellow
+        Write-Host "`n  [*] No local Windows 11 ISO found." -ForegroundColor Yellow
+        Write-Host "  [*] Automatically downloading official Windows 11 ISO directly from Microsoft..." -ForegroundColor Cyan
+        $iso = Invoke-Windows11IsoDownload
+    }
+
+    if (-not $iso) {
+        Write-Host "`n  [X] Error: Could not acquire Windows 11 ISO image." -ForegroundColor Red
+        Write-Host "      Please check your internet connection or supply -IsoPath <path>." -ForegroundColor Yellow
         return $false
     }
 
@@ -205,6 +218,9 @@ if ($Scan) {
     }
 } elseif ($Audit) {
     Run-AuditWorkflow | Out-Null
+} elseif ($DownloadOnly) {
+    Show-Banner
+    Invoke-Windows11IsoDownload | Out-Null
 } elseif ($Upgrade) {
     Run-UpgradeWorkflow -TargetEdition $Edition -IsoFile $IsoPath -CustomKey $ProductKey -Bypass:$BypassHardware -Silent:$Unattended
 } else {
@@ -214,22 +230,33 @@ if ($Scan) {
         Show-SystemSummary
 
         Write-Host "  Main Menu:" -ForegroundColor White
-        Write-Host "  [1] Run Full Health & Compatibility Scan" -ForegroundColor Cyan
-        Write-Host "  [2] Fix Broken Registry & Dangling Services" -ForegroundColor Cyan
-        Write-Host "  [3] Hardware Audit for Windows 11" -ForegroundColor Cyan
-        Write-Host "  [4] Upgrade to Windows 11 Pro (Index 6)" -ForegroundColor Green
-        Write-Host "  [5] Upgrade to Windows 11 Home" -ForegroundColor Green
-        Write-Host "  [6] Apply Hardware Bypasses (Install on ANY PC)" -ForegroundColor Yellow
+        Write-Host "  [1] 🚀 1-Click Upgrade (Auto-Download ISO -> Scan -> Bypass -> Install Pro)" -ForegroundColor Green
+        Write-Host "  [2] Run Full Health & Compatibility Scan" -ForegroundColor Cyan
+        Write-Host "  [3] Fix Broken Registry & Dangling Services" -ForegroundColor Cyan
+        Write-Host "  [4] Hardware Compatibility Audit" -ForegroundColor Cyan
+        Write-Host "  [5] Download Official Windows 11 ISO Only" -ForegroundColor Yellow
+        Write-Host "  [6] Upgrade to Windows 11 Home" -ForegroundColor Green
+        Write-Host "  [7] Apply Hardware Bypasses Only" -ForegroundColor Yellow
         Write-Host "  [Q] Exit`n" -ForegroundColor Gray
 
         $choice = Read-Host "  Select an option"
         switch ($choice) {
             "1" {
+                # 1-Click Upgrade: Scan -> Fix if needed -> Upgrade to Pro
+                $diag = Run-ScanWorkflow
+                if ($diag.DanglingServices.Count -gt 0) {
+                    Write-Host "`n  [*] Automatically cleaning broken services..." -ForegroundColor Cyan
+                    Repair-DanglingServices -Services $diag.DanglingServices | Out-Null
+                }
+                Run-UpgradeWorkflow -TargetEdition "Pro" -Bypass:$true
+                break
+            }
+            "2" {
                 Run-ScanWorkflow | Out-Null
                 Write-Host "`n  Press Enter to continue..." -ForegroundColor Gray
                 [void][System.Console]::ReadLine()
             }
-            "2" {
+            "3" {
                 $diag = Run-ScanWorkflow
                 if ($diag.DanglingServices.Count -gt 0) {
                     $repaired = Repair-DanglingServices -Services $diag.DanglingServices
@@ -240,20 +267,21 @@ if ($Scan) {
                 Write-Host "`n  Press Enter to continue..." -ForegroundColor Gray
                 [void][System.Console]::ReadLine()
             }
-            "3" {
+            "4" {
                 Run-AuditWorkflow | Out-Null
                 Write-Host "`n  Press Enter to continue..." -ForegroundColor Gray
                 [void][System.Console]::ReadLine()
             }
-            "4" {
-                Run-UpgradeWorkflow -TargetEdition "Pro" -Bypass:$true
-                break
-            }
             "5" {
+                Invoke-Windows11IsoDownload | Out-Null
+                Write-Host "`n  Press Enter to continue..." -ForegroundColor Gray
+                [void][System.Console]::ReadLine()
+            }
+            "6" {
                 Run-UpgradeWorkflow -TargetEdition "Home" -Bypass:$true
                 break
             }
-            "6" {
+            "7" {
                 Set-Win11HardwareBypass
                 Write-Host "`n  Press Enter to continue..." -ForegroundColor Gray
                 [void][System.Console]::ReadLine()

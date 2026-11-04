@@ -1,7 +1,7 @@
 # anywin11 🚀
 
 > **Automated Windows 11 Readiness, System Health Scan, Hardware Audit & In-Place Upgrade Engine.**  
-> Upgrade any compatible (or legacy/unsupported) PC to Windows 11 cleanly while preserving all your personal files, desktop, and applications.
+> Automatically downloads the official Microsoft ISO, applies hardware bypasses, and upgrades any PC to Windows 11 with 1 click while preserving all your personal files and applications.
 
 ---
 
@@ -21,11 +21,10 @@
 
 ## 📋 Table of Contents
 - [🌟 Highlights](#-highlights)
-- [📥 Installation Guide](#-installation-guide)
+- [📥 1-Click Installation Guide](#-1-click-installation-guide)
   - [Prerequisites](#prerequisites)
   - [Step 1: Download anywin11](#step-1-download-anywin11)
-  - [Step 2: Download the Windows 11 ISO](#step-2-download-the-windows-11-iso)
-  - [Step 3: Run the Health Scan & Upgrade](#step-3-run-the-health-scan--upgrade)
+  - [Step 2: Launch & Upgrade (Fully Automated)](#step-2-launch--upgrade-fully-automated)
 - [🖥️ Interactive Console Menu](#️-interactive-console-menu)
 - [🛠️ Advanced CLI Usage](#️-advanced-cli-usage)
 - [📂 Project Architecture](#-project-architecture)
@@ -37,40 +36,37 @@
 
 ## 🌟 Highlights
 
+- ⚡ **Fully Automated ISO Downloader:** No manual downloads required. `anywin11` automatically negotiates and retrieves genuine, untampered Windows 11 ISOs directly from Microsoft's CDN with resumable download support (`curl.exe -C -`).
+- 🔓 **Universal Hardware Bypass Engine:** Built-in `LabConfig` and `MoSetup` bypasses (`BypassTPMCheck`, `BypassCPUCheck`, `BypassSecureBootCheck`, `BypassRAMCheck`, `BypassStorageCheck`), enabling smooth upgrades on any older or unsupported PC.
 - 🔍 **System Diagnostics & Registry Cleaner:** Scans core registry hives, detects dangling service entries pointing to deleted binaries (adware remnants, stale driver software), checks pending reboot backlogs, and inspects component store health.
-- 🛡️ **Zero-Risk Automated Backups:** Exports `.reg` backup files before touching or removing any registry key.
-- ⚡ **Windows 11 Hardware Auditor:** Evaluates CPU architecture, RAM, TPM 2.0 / 1.2 chip status, Secure Boot, UEFI partition style (GPT vs MBR), and storage capacity.
-- 🔓 **Universal Hardware Bypass Engine:** Built-in `LabConfig` and `MoSetup` bypasses (`BypassTPMCheck`, `BypassCPUCheck`, `BypassSecureBootCheck`, `BypassRAMCheck`, `BypassStorageCheck`), enabling smooth upgrades on unsupported hardware.
+- 🛡️ **Zero-Risk Automated Backups:** Exports `.reg` backup files to `%TEMP%\anywin11\backups\` before modifying or removing any registry key.
 - 🎯 **Intelligent Edition Selection:** Detects motherboard BIOS OEM keys (`OA3xOriginalProductKey`), matching or upgrading between Windows Home and Windows Pro (Index 6) seamlessly with official generic setup keys.
-- 💿 **ISO Verification & Mounting Engine:** Auto-discovers Windows 11 ISOs, verifies SHA-256 cryptographic checksums against Microsoft release databases, mounts virtual drives, and inspects `install.wim` / `install.esd` images.
-- 🚀 **1-Click Execution:** Interactive graphical menu and command-line automation with automatic UAC elevation.
+- 💿 **ISO Verification & Mounting Engine:** Verifies SHA-256 cryptographic checksums, mounts virtual drives, and inspects `install.wim` / `install.esd` images automatically.
+- 🚀 **Zero-Fuss Execution:** Double-click `anywin11.cmd` — it handles UAC elevation, PowerShell execution policy bypass, downloading, scanning, and launching the upgrade wizard.
 
 ---
 
-## 📥 Installation Guide
+## 📥 1-Click Installation Guide
 
-Follow these simple steps to download and run `anywin11` on your computer.
+You do **not** need to manually search for or download Windows 11 ISOs. `anywin11` handles everything end-to-end.
 
 ### Prerequisites
-Before starting, ensure your system meets the following:
-* **Operating System:** Windows 10, Windows 8.1, or Windows 7 SP1 (64-bit recommended)
-* **Storage Space:** At least **30–64 GB free disk space** on drive `C:` for the Windows 11 installation
-* **Account Rights:** Administrator privileges on your computer
+* **Supported OS:** Windows 10, Windows 8.1, or Windows 7 SP1 (64-bit recommended)
+* **Storage Space:** At least **30–64 GB free disk space** on drive `C:`
+* **Internet Connection:** To auto-download the official Windows 11 ISO directly from Microsoft
 
 ---
 
 ### Step 1: Download anywin11
 
-Choose **either** Method A (easiest) or Method B (Git):
+Choose **either** Method A or Method B:
 
 #### Method A: Download ZIP (No Git Required)
-1. At the top of this GitHub repository, click the green **Code** button and select **Download ZIP**  
-   *(or [click here to download](https://github.com/Ojujucalabar/Anywindows11/archive/refs/heads/main.zip))*.
-2. Right-click the downloaded `Anywindows11-main.zip` file and select **Extract All...**.
-3. Choose an extraction folder (for example, on your Desktop or in `C:\anywin11`).
+1. Download the repository ZIP:  
+   👉 **[Click Here to Download anywin11 (ZIP)](https://github.com/Ojujucalabar/Anywindows11/archive/refs/heads/main.zip)**
+2. Right-click `Anywindows11-main.zip` $\rightarrow$ select **Extract All...** $\rightarrow$ click **Extract**.
 
 #### Method B: Clone via Git
-Open PowerShell or Command Prompt and run:
 ```powershell
 git clone https://github.com/Ojujucalabar/Anywindows11.git
 cd Anywindows11
@@ -78,37 +74,27 @@ cd Anywindows11
 
 ---
 
-### Step 2: Download the Windows 11 ISO
-
-`anywin11` automatically discovers any Windows 11 ISO placed in your **Downloads** or **Desktop** folder.
-
-1. Go to the official [Microsoft Windows 11 Download Page](https://www.microsoft.com/software-download/windows11).
-2. Scroll down to **Download Windows 11 Disk Image (ISO) for x64 devices**.
-3. Select **Windows 11 (multi-edition ISO for x64 devices)** from the dropdown and click **Download Now**.
-4. Choose your preferred product language (e.g., **English (United States)**) and click **Confirm**.
-5. Click **64-bit Download** and save the `.iso` file directly into your standard **`Downloads`** folder.
-
-> 💡 **Tip:** Keep the ISO inside your `Downloads` folder! `anywin11` will automatically detect, verify its checksum, and mount it for you.
-
----
-
-### Step 3: Run the Health Scan & Upgrade
+### Step 2: Launch & Upgrade (Fully Automated)
 
 1. Open the extracted **`Anywindows11`** folder.
 2. **Double-click `anywin11.cmd`**  
-   *(Alternatively, right-click `anywin11.cmd` and select **Run as administrator**)*.
-3. When the Windows User Account Control (UAC) prompt appears (*"Do you want to allow this app to make changes to your device?"*), click **Yes**.
-4. The interactive terminal menu will appear on your screen:
-   * **Press `1`** to run a complete system and registry health scan.
-   * **Press `2`** if any broken registry services or adware leftovers were found, to clean them safely with automatic backups.
-   * **Press `4`** to upgrade to **Windows 11 Pro** (or **`5`** for **Windows 11 Home**).
-5. The Windows 11 Setup wizard will launch on your screen. Verify that **"Keep personal files and apps"** is checked, and click **Install**!
+   *(Or right-click `anywin11.cmd` and select **Run as administrator**)*.
+3. Click **Yes** when the Windows UAC permission prompt appears.
+4. On the menu, press **`1`** for **1-Click Upgrade**:
+   ```text
+   Main Menu:
+   [1] 🚀 1-Click Upgrade (Auto-Download ISO -> Scan -> Bypass -> Install Pro)
+   ```
+5. **Sit back and relax:**
+   * `anywin11` scans and cleans any broken registry services or adware remnants.
+   * `anywin11` automatically applies hardware bypasses so your PC qualifies regardless of age.
+   * If you don't already have a Windows 11 ISO, `anywin11` downloads the official genuine ISO directly from Microsoft with live progress.
+   * It mounts the ISO and launches the Windows 11 Setup wizard with **"Keep personal files and apps"** enabled.
+6. Click **Install** in the Windows Setup wizard. Your PC will restart a few times and boot into your fresh Windows 11 installation with all your files intact!
 
 ---
 
 ## 🖥️ Interactive Console Menu
-
-When launched via `anywin11.cmd` or `.\anywin11.ps1`, you will see this interactive dashboard:
 
 ```text
    ___  _  ____ _____      _____ _  _ _ 
@@ -123,12 +109,13 @@ When launched via `anywin11.cmd` or `.\anywin11.ps1`, you will see this interact
   --------------------------------------------------------
 
   Main Menu:
-  [1] Run Full Health & Compatibility Scan
-  [2] Fix Broken Registry & Dangling Services
-  [3] Hardware Audit for Windows 11
-  [4] Upgrade to Windows 11 Pro (Index 6)
-  [5] Upgrade to Windows 11 Home
-  [6] Apply Hardware Bypasses (Install on ANY PC)
+  [1] 🚀 1-Click Upgrade (Auto-Download ISO -> Scan -> Bypass -> Install Pro)
+  [2] Run Full Health & Compatibility Scan
+  [3] Fix Broken Registry & Dangling Services
+  [4] Hardware Compatibility Audit
+  [5] Download Official Windows 11 ISO Only
+  [6] Upgrade to Windows 11 Home
+  [7] Apply Hardware Bypasses Only
   [Q] Exit
 ```
 
@@ -136,40 +123,41 @@ When launched via `anywin11.cmd` or `.\anywin11.ps1`, you will see this interact
 
 ## 🛠️ Advanced CLI Usage
 
-For advanced users or automation scripts, `anywin11` can be controlled directly via PowerShell command-line arguments:
+For power users or automation scripts:
 
 ```powershell
-# 1. Run a read-only registry and system integrity scan
-.\anywin11.ps1 -Scan
-
-# 2. Repair broken registry services and clean dangling paths
-.\anywin11.ps1 -Fix
-
-# 3. Audit hardware compatibility for Windows 11 requirements
-.\anywin11.ps1 -Audit
-
-# 4. In-place upgrade to Windows 11 Pro (retaining files & apps)
+# 1. Full automated upgrade (downloads ISO if missing, applies bypasses, launches setup)
 .\anywin11.ps1 -Upgrade -Edition Pro
 
-# 5. Upgrade using a custom ISO path with hardware bypasses enabled
-.\anywin11.ps1 -Upgrade -IsoPath "D:\CustomISOs\Windows11.iso" -BypassHardware
+# 2. Download official Windows 11 ISO only (resumable)
+.\anywin11.ps1 -DownloadOnly
 
-# 6. Silent unattended upgrade
-.\anywin11.ps1 -Upgrade -Edition Pro -BypassHardware -Unattended
+# 3. Read-only registry and system integrity scan
+.\anywin11.ps1 -Scan
+
+# 4. Repair broken registry services and clean dangling paths
+.\anywin11.ps1 -Fix
+
+# 5. Audit hardware compatibility for Windows 11 requirements
+.\anywin11.ps1 -Audit
+
+# 6. Upgrade using an existing custom ISO path
+.\anywin11.ps1 -Upgrade -IsoPath "D:\CustomISOs\Windows11.iso" -BypassHardware
 ```
 
 ### CLI Flags Reference
 
 | Flag | Description |
 |---|---|
+| `-Upgrade` | Mounts (or auto-downloads) the Windows 11 ISO, applies bypasses, and launches Setup. |
+| `-DownloadOnly` | Downloads the official Microsoft Windows 11 ISO to Downloads without installing. |
+| `-Edition <Pro\|Home>` | Sets target edition (defaults to `Pro`). |
+| `-BypassHardware` | Forces `MoSetup` and `LabConfig` registry bypasses for legacy hardware. |
 | `-Scan` | Performs a read-only audit of registry hives, services, and pending reboot queues. |
 | `-Fix` | Automatically exports `.reg` backups and removes broken / orphaned service keys. |
 | `-Audit` | Runs a comprehensive hardware readiness check for Windows 11 requirements. |
-| `-Upgrade` | Mounts the Windows 11 ISO, applies bypasses if needed, and launches the upgrade wizard. |
-| `-Edition <Pro\|Home>` | Sets target edition (defaults to `Pro`). |
-| `-IsoPath <path>` | Specifies custom path to a Windows 11 `.iso` file. Auto-discovers if omitted. |
+| `-IsoPath <path>` | Specifies custom path to an existing `.iso` file. Auto-discovers/downloads if omitted. |
 | `-ProductKey <key>` | Specifies a custom 25-character product key to install. |
-| `-BypassHardware` | Forces `MoSetup` and `LabConfig` registry bypasses for legacy hardware. |
 | `-Unattended` | Runs silent in-place upgrade in background (`/auto upgrade /quiet`). |
 
 ---
@@ -184,7 +172,7 @@ anywin11/
 │   ├── SystemDiagnostics.psm1    # Scans registry hives, dangling services, pending renames
 │   ├── HardwareAuditor.psm1      # Audits CPU, RAM, TPM 2.0, SecureBoot, UEFI/GPT, Storage
 │   ├── EditionManager.psm1       # Resolves current Windows edition, BIOS keys & upgrade keys
-│   ├── IsoEngine.psm1            # ISO auto-discovery, SHA-256 checksums, virtual drive mounting
+│   ├── IsoEngine.psm1            # Automated Microsoft ISO downloader, checksums, virtual drive mounting
 │   └── UpgradeRunner.psm1        # Hardware bypass injection & Windows Setup launcher
 ├── README.md                     # Documentation & user guide
 ├── LICENSE                       # MIT License
@@ -195,21 +183,21 @@ anywin11/
 
 ## ❓ Frequently Asked Questions & Troubleshooting
 
-#### Q: "PowerShell says running scripts is disabled on this system."
-**A:** This is Windows' default execution policy. You do not need to change system settings—simply double-click **`anywin11.cmd`**, which automatically launches PowerShell with the `-ExecutionPolicy Bypass` parameter.
+#### Q: "Do I need to go to Microsoft's website to download anything?"
+**A:** **No.** `anywin11` automatically negotiates and downloads the official Windows 11 ISO directly from Microsoft's CDN into your `Downloads` folder, with resume support if your connection drops.
 
-#### Q: "My PC doesn't have TPM 2.0 or an officially supported 8th Gen+ CPU. Can I still upgrade?"
-**A:** **Yes!** When you choose Option `4` or `5` (or run with `-BypassHardware`), `anywin11` automatically injects Microsoft's supported `MoSetup` and `LabConfig` registry keys. This allows the official Windows 11 Setup wizard to bypass TPM, CPU generation, Secure Boot, and RAM checks safely.
+#### Q: "My PC doesn't have TPM 2.0 or an officially supported 8th Gen+ CPU. Will this work?"
+**A:** **Yes!** Option `1` automatically injects Microsoft's supported `MoSetup` and `LabConfig` bypass keys (`BypassTPMCheck`, `BypassCPUCheck`, `BypassSecureBootCheck`, `BypassRAMCheck`, `BypassStorageCheck`). This allows Windows 11 to install smoothly on older PCs.
 
 #### Q: "Will I lose my files, pictures, or installed software?"
-**A:** **No.** `anywin11` executes an **in-place upgrade** with `/migratedata all`, meaning your personal files, desktop shortcuts, documents, and compatible applications remain exactly where they are.
+**A:** **No.** `anywin11` triggers an **in-place upgrade** with `/migratedata all`. All your desktop icons, documents, photos, games, and compatible applications remain untouched.
 
 #### Q: "How do I activate Windows 11 Pro after upgrading?"
-**A:** If you upgraded to Pro using the default setup key, your system will be in a grace period. To activate permanently:
+**A:** If you upgraded to Pro using the default setup key:
 1. Open Windows **Settings** (`Win + I`) $\rightarrow$ **System** $\rightarrow$ **Activation**.
-2. Click **Change product key** and enter your Windows 10 or Windows 11 Pro key (or sign in with a Microsoft account that owns a digital Pro license).
+2. Click **Change product key** and enter your Windows 10/11 Pro key (or sign in with a Microsoft account that owns a digital Pro license).
 
-#### Q: "Can I revert back to Windows 10 if I don't like Windows 11?"
+#### Q: "Can I revert back to Windows 10 if I change my mind?"
 **A:** **Yes.** Windows preserves your previous installation in `C:\Windows.old` for 10 days. To roll back:
 Open **Settings** $\rightarrow$ **System** $\rightarrow$ **Recovery** $\rightarrow$ click **Go back**.
 
